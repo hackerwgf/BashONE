@@ -14,6 +14,7 @@ COLOR_RED='\033[31m'
 COLOR_GREEN='\033[32m'
 COLOR_GREY='\033[37m'
 NO_COLOR='\033[0m'
+FONT_STRONG='\033[1m'
 PRICE_UP_RECT="${COLOR_GREEN}█${NO_COLOR}"
 PRICE_UP_RECT_TOP="${COLOR_GREEN}▀${NO_COLOR}"
 PRICE_UP_RECT_BOTTOM="${COLOR_GREEN}▄${NO_COLOR}"
@@ -128,6 +129,30 @@ do
     candle_arr[`expr ${i} - 1`]=${open}" "${high}" "${low}" "${close}" "${change}" "${day_month}
 done
 log "${candle_arr[*]}"
+# fetch ticker
+api_result=`curl -s "https://${HOST}/api/v3/asset_pairs/${MARKET}/ticker"`
+log ${api_result}
+_daily_change_percent=''
+if [[ ${api_result} == {\"code\":0* ]];then
+    _open_price=${api_result#*open\":\"}
+    _open_price=${_open_price%%\",*}
+    _daily_change=${api_result#*daily_change\":\"}
+    _daily_change=${_daily_change%%\"*}
+    _daily_change_percent=`echo "scale=8;${_daily_change} / ${_open_price} * 100" | bc`
+    _daily_change_percent=`echo "scale=2;${_daily_change_percent} / 1" | bc`
+    if [[ ${_daily_change_percent} == .* ]] || [[ ${_daily_change_percent} == -.* ]];then
+        _daily_change_percent=${_daily_change_percent/./0.}
+    fi
+    if [[ ${_daily_change_percent} == -* ]];then
+        _daily_change_percent="${FONT_STRONG}${COLOR_RED}${_daily_change_percent}"
+    else
+        _daily_change_percent="${FONT_STRONG}${COLOR_GREEN}+${_daily_change_percent}"
+    fi
+    _daily_change_percent+='%'
+fi
+getCurrentCandleData '0'
+_ticker_info_gap_str=${EMPTY_STR}${EMPTY_STR}${EMPTY_STR}${EMPTY_STR}${EMPTY_STR}${EMPTY_STR}
+echo -e "\n${BASE_PADDING_LEFT_SAPCE}${FONT_STRONG}${COLOR_GREEN}${MARKET}${_ticker_info_gap_str}${FONT_STRONG}${COLOR_GREEN}${c_candle_close}${_ticker_info_gap_str}${_daily_change_percent}"
 # calculate kchart price
 max_price='0'
 min_price='0'
@@ -287,4 +312,4 @@ for i in $(seq 1 ${_candle_count_in_loop});do
     fi
 done
 
-echo -e "\n\n${result}\n\n"
+echo -e "\n${result}\n\n"
