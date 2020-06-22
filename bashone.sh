@@ -35,6 +35,13 @@ BASE_PADDING_LEFT_SAPCE=''
 for i in $(seq 1 ${PADDING_LEFT_SAPCE});do
     BASE_PADDING_LEFT_SAPCE+=${EMPTY_STR}
 done
+TICKER_SPACE='5'
+
+LAST_PRICE_STR='Last Price'
+H24_CHANGE_STR='24h Change'
+H24_HIGH_STR='24h High'
+H24_LOW_STR='24h Low'
+H24_VOLUME_STR='24h Volume'
 
 function log(){
     if [ ${DEBUG} = 1 ];then
@@ -132,8 +139,21 @@ log "${candle_arr[*]}"
 # fetch ticker
 api_result=`curl -s "https://${HOST}/api/v3/asset_pairs/${MARKET}/ticker"`
 log ${api_result}
+# parse ticker data
 _daily_change_percent=''
+_day_high_price=''
+_day_low_price=''
+_day_close_price=''
+_day_volume=''
 if [[ ${api_result} == {\"code\":0* ]];then
+    _day_high_price=${api_result#*high\":\"}
+    _day_high_price=${_day_high_price%%\",*}
+    _day_low_price=${api_result#*low\":\"}
+    _day_low_price=${_day_low_price%%\",*}
+    _day_volume=${api_result#*volume\":\"}
+    _day_volume=${_day_volume%%\",*}
+    _day_close_price=${api_result#*close\":\"}
+    _day_close_price=${_day_close_price%%\",*}
     _open_price=${api_result#*open\":\"}
     _open_price=${_open_price%%\",*}
     _daily_change=${api_result#*daily_change\":\"}
@@ -143,16 +163,99 @@ if [[ ${api_result} == {\"code\":0* ]];then
     if [[ ${_daily_change_percent} == .* ]] || [[ ${_daily_change_percent} == -.* ]];then
         _daily_change_percent=${_daily_change_percent/./0.}
     fi
-    if [[ ${_daily_change_percent} == -* ]];then
-        _daily_change_percent="${FONT_STRONG}${COLOR_RED}${_daily_change_percent}"
-    else
-        _daily_change_percent="${FONT_STRONG}${COLOR_GREEN}+${_daily_change_percent}"
+    if [[ ${_daily_change_percent} != -* ]];then
+        _daily_change_percent="+${_daily_change_percent}"
     fi
     _daily_change_percent+='%'
 fi
-getCurrentCandleData '0'
-_ticker_info_gap_str=${EMPTY_STR}${EMPTY_STR}${EMPTY_STR}${EMPTY_STR}${EMPTY_STR}${EMPTY_STR}
-echo -e "\n${BASE_PADDING_LEFT_SAPCE}${FONT_STRONG}${COLOR_GREEN}${MARKET}${_ticker_info_gap_str}${FONT_STRONG}${COLOR_GREEN}${c_candle_close}${_ticker_info_gap_str}${_daily_change_percent}"
+# draw ticker
+ticker_result=${BASE_PADDING_LEFT_SAPCE}
+_ticker_info_gap_str=''
+for i in $(seq 1 ${TICKER_SPACE});do
+    _ticker_info_gap_str+=${EMPTY_STR}
+done
+for i in $(seq 1 ${#MARKET});do
+    ticker_result+=${EMPTY_STR}
+done
+ticker_result+=${_ticker_info_gap_str}
+# last price
+ticker_result+="${COLOR_GREY}${LAST_PRICE_STR}${NO_COLOR}"
+_ticker_str_offset=`expr ${#LAST_PRICE_STR} - ${#_day_close_price}`
+_ticker_str_offset=${_ticker_str_offset#-}
+_last_price_gap=''
+if [ ${#_day_close_price} -le ${#LAST_PRICE_STR} ];then
+    ticker_result+=${_ticker_info_gap_str}
+    for i in $(seq 1 `expr ${_ticker_str_offset} + ${TICKER_SPACE}`);do
+        _last_price_gap+=${EMPTY_STR}
+    done
+else
+    for i in $(seq 1 `expr ${_ticker_str_offset} + ${TICKER_SPACE}`);do
+        ticker_result+=${EMPTY_STR}
+    done
+    _last_price_gap+=${_ticker_info_gap_str}
+fi
+# 24h change
+ticker_result+="${COLOR_GREY}${H24_CHANGE_STR}${NO_COLOR}"
+_ticker_str_offset=`expr ${#H24_CHANGE_STR} - ${#_daily_change_percent}`
+_ticker_str_offset=${_ticker_str_offset#-}
+_daily_change_gap=''
+if [ ${#_daily_change_percent} -le ${#H24_CHANGE_STR} ];then
+    ticker_result+=${_ticker_info_gap_str}
+    for i in $(seq 1 `expr ${_ticker_str_offset} + ${TICKER_SPACE}`);do
+        _daily_change_gap+=${EMPTY_STR}
+    done
+else
+    for i in $(seq 1 `expr ${_ticker_str_offset} + ${TICKER_SPACE}`);do
+        ticker_result+=${EMPTY_STR}
+    done
+    _daily_change_gap+=${_ticker_info_gap_str}
+fi
+# 24h high
+ticker_result+="${COLOR_GREY}${H24_HIGH_STR}${NO_COLOR}"
+_ticker_str_offset=`expr ${#H24_HIGH_STR} - ${#_day_high_price}`
+_ticker_str_offset=${_ticker_str_offset#-}
+_day_high_gap=''
+if [ ${#_day_high_price} -le ${#H24_HIGH_STR} ];then
+    ticker_result+=${_ticker_info_gap_str}
+    for i in $(seq 1 `expr ${_ticker_str_offset} + ${TICKER_SPACE}`);do
+        _day_high_gap+=${EMPTY_STR}
+    done
+else
+    for i in $(seq 1 `expr ${_ticker_str_offset} + ${TICKER_SPACE}`);do
+        ticker_result+=${EMPTY_STR}
+    done
+    _day_high_gap+=${_ticker_info_gap_str}
+fi
+# 24h low
+ticker_result+="${COLOR_GREY}${H24_LOW_STR}${NO_COLOR}"
+_ticker_str_offset=`expr ${#H24_LOW_STR} - ${#_day_low_price}`
+_ticker_str_offset=${_ticker_str_offset#-}
+_day_low_gap=''
+if [ ${#_day_low_price} -le ${#H24_LOW_STR} ];then
+    ticker_result+=${_ticker_info_gap_str}
+    for i in $(seq 1 `expr ${_ticker_str_offset} + ${TICKER_SPACE}`);do
+        _day_low_gap+=${EMPTY_STR}
+    done
+else
+    for i in $(seq 1 `expr ${_ticker_str_offset} + ${TICKER_SPACE}`);do
+        ticker_result+=${EMPTY_STR}
+    done
+    _day_low_gap+=${_ticker_info_gap_str}
+fi
+# 24h volume
+ticker_result+="${COLOR_GREY}${H24_VOLUME_STR}${NO_COLOR}"
+# ticker data
+ticker_result+="\n${BASE_PADDING_LEFT_SAPCE}${FONT_STRONG}${COLOR_GREEN}${MARKET}${NO_COLOR}${_ticker_info_gap_str}"
+ticker_result+="${FONT_STRONG}${COLOR_GREEN}${_day_close_price}${NO_COLOR}${_last_price_gap}"
+if [[ ${_daily_change_percent} == -* ]];then
+    _daily_change_percent="${FONT_STRONG}${COLOR_RED}${_daily_change_percent}${NO_COLOR}"
+else
+    _daily_change_percent="${FONT_STRONG}${COLOR_GREEN}${_daily_change_percent}${NO_COLOR}"
+fi
+ticker_result+="${_daily_change_percent}${NO_COLOR}${_daily_change_gap}"
+ticker_result+="${FONT_STRONG}${COLOR_GREEN}${_day_high_price}${NO_COLOR}${_day_high_gap}"
+ticker_result+="${FONT_STRONG}${COLOR_GREEN}${_day_low_price}${NO_COLOR}${_day_low_gap}"
+ticker_result+="${FONT_STRONG}${COLOR_GREEN}${_day_volume} ${MARKET%%-*}${NO_COLOR}"
 # calculate kchart price
 max_price='0'
 min_price='0'
@@ -312,4 +415,5 @@ for i in $(seq 1 ${_candle_count_in_loop});do
     fi
 done
 
+echo -e "\n${ticker_result}"
 echo -e "\n${result}\n\n"

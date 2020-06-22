@@ -1,7 +1,7 @@
 # BashONE
 Show cryptocurrency charts in shell, powered by [BigONE](https://www.bigone.com/).
 
-![screenshot](https://i.loli.net/2020/06/21/26scwaojGIWfr1T.png)
+![screenshot](https://i.loli.net/2020/06/23/4nlYpfZq6Ux9ySH.png)
 
 *Only tested on macOS Mojave.*
 
