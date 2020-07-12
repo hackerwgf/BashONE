@@ -78,6 +78,12 @@ if [[ ${api_result} != {\"code\":0* ]]; then
     echo -e "${COLOR_RED}fetch asset info error${NO_COLOR}"
     exit
 fi
+if [[ ${api_result} =~ ${MARKET} ]]; then
+    log "market name found"
+else
+    echo -e "${COLOR_RED}market name not found${NO_COLOR}"
+    exit
+fi
 # parse quote scale
 api_result=${api_result#*${MARKET}\",\"quote_scale\":}
 PRICE_SCALE=${api_result%%,*}
