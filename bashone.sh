@@ -2,7 +2,7 @@
 
 # set constants
 DEBUG=0
-HOST='www.b1.cab'
+HOST='www.b1.zone'
 MARKET='BTC-USDT'
 PERIOD='day1'
 LIMIT='36'
